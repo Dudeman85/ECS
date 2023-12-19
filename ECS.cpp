@@ -3,13 +3,28 @@
 #define ECS_MAX_COMPONENTS 100
 #include "ECS.h"
 
+struct foo
+{
+    bool a;
+};
+struct bar
+{
+    int b;
+};
+
 int main()
 {
-    ecs::Signature signature;
-    std::cout << signature.size();
+    std::cout << "Start Test:\n";
+
+    ecs::RegisterComponent<foo>();
+    ecs::RegisterComponent<bar>();
 
     ecs::Entity e = ecs::NewEntity();
-    std::cout << ecs::availableEntities.size();
-    std::cout << std::endl << e;
+    ecs::AddComponent(e, foo());
+
+
+
     ecs::availableEntities;
+
+    std::cout << "End Test:\n";
 }

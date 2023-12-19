@@ -25,6 +25,7 @@ SOFTWARE.
 #include <stack>
 #include <set>
 #include <unordered_map>
+#include <typeinfo>
 #include <stdexcept>
 #include <iostream>
 
@@ -64,15 +65,33 @@ namespace ecs
 	class IComponentArray 
 	{
 	public:
-		virtual void HasComponent(Entity entity) = 0;
+		virtual void RemoveComponent(Entity entity) = 0;
 	};
 	//A map of every components name to it's corresponding component array
 	std::unordered_map<const char*, std::shared_ptr<IComponentArray>> componentArrays;
 	//A map from a components name to its ID
 	std::unordered_map<const char*, uint16_t> componentTypeToID;
+	//A map from a components ID to its name
+	std::unordered_map<uint16_t, const char*> componentIDToType;
 	//The amount of components registered. Also the next available component ID
 	uint16_t componentCount = 0;
 
+	//System Management Data
+
+	//Base class all systems inherit from
+	class System
+	{
+	public:
+		//Set of every entity containing the required components for the system
+		std::set<Entity> entities;
+	};
+	//Map of each system accessible by its name
+	std::unordered_map<const char*, std::shared_ptr<System>> systems;
+	//Map of each system's signature accessible by their type name
+	std::unordered_map<const char*, Signature> systemSignatures;
+
+
+	//Entity Functions
 
 	//Create a new entity as a unique ID
 	//Returns 0 on failure
@@ -115,14 +134,24 @@ namespace ecs
 			return;
 		}
 
+		//Delete all components
+		for (uint16_t i = 0; i < componentCount; i++)
+		{
+			if (entitySignatures[entity][i])
+			{
+				componentArrays[componentIDToType[i]]->RemoveComponent(entity);
+			}
+		}
+		//Set the entitys signature to none temporarily
+		entitySignatures[entity].reset();
+
+		_OnEntitySignatureChanged(entity);
+
 		//Set the entity as available and update relevant trackers
 		entitySignatures.erase(entity);
 		usedEntities.erase(entity);
 		availableEntities.push(entity);
 		entityCount--;
-
-		//TODO Delete components
-
 	}
 
 	//Checks if the entity exists
@@ -130,6 +159,9 @@ namespace ecs
 	{
 		return usedEntities.find(entity) != usedEntities.end();
 	}
+
+
+	//Component Functions
 
 	//A component array class is created for each type of component
 	template<typename T>
@@ -144,7 +176,7 @@ namespace ecs
 		void AddComponent(Entity entity, T component)
 		{
 			//Make sure the entity does not already have the component
-			if (!HasComponent(entity))
+			if (HasComponent(entity))
 			{
 				std::cout << WARNING_FORMAT << "ECS WARNING in AddComponent(): Entity already has the component you are trying to add!" << NORMAL_FORMAT << std::endl;
 				return;
@@ -154,10 +186,10 @@ namespace ecs
 		}
 
 		//Removes a component from entity and deletes all its data
-		void RemoveComponent(Entity entity)
+		void RemoveComponent(Entity entity) override
 		{
 			//Make sure the entity has the component
-			if (HasComponent(entity))
+			if (!HasComponent(entity))
 			{
 				std::cout << WARNING_FORMAT << "ECS WARNING in RemoveComponent(): Entity does not have the component you are trying to remove!" << NORMAL_FORMAT << std::endl;
 				return;
@@ -170,7 +202,7 @@ namespace ecs
 		T& GetComponent(Entity entity)
 		{
 			//Make sure the entity has the component
-			if (HasComponent(entity))
+			if (!HasComponent(entity))
 			{
 				std::cout << ERROR_FORMAT << "ECS ERROR in GetComponent(): Entity does not have the desired component!" << NORMAL_FORMAT << std::endl;
 				throw std::runtime_error("ECS ERROR: Entity does not have the desired component!");
@@ -179,19 +211,19 @@ namespace ecs
 			return components[entity];
 		}
 
-		//Returns true if the entity has this typoe of component
-		bool HasComponent(Entity entity) override
+		//Returns true if the entity has this type of component
+		bool HasComponent(Entity entity)
 		{
 			return components.count(entity) > 0;
 		}
 	};
-	
+
 	//Register a new component of type T
 	template<typename T>
 	void RegisterComponent()
 	{
 		const char* componentType = typeid(T).name();
-		
+
 		//Make sure the component has not been previously registered
 		if (componentArrays.count(componentType) != 0)
 		{
@@ -201,20 +233,29 @@ namespace ecs
 		//Make sure there are not too many components registered
 		if (componentCount >= ECS_MAX_COMPONENTS)
 		{
-			std::cout << ERROR_FORMAT << "ECS ERROR in RegisterComponent(): Too many registered components! The current limit is " 
+			std::cout << ERROR_FORMAT << "ECS ERROR in RegisterComponent(): Too many registered components! The current limit is "
 				<< ECS_MAX_COMPONENTS << ". Consider including \"#define ECS_MAX_COMPONENTS num\" before you include ECS.h!" << NORMAL_FORMAT << std::endl;
 			throw std::runtime_error("ECS ERROR: Too many registered components!");
 		}
 
 		//Assigns an ID and makes a new component array for the registered component type
 		componentTypeToID[componentType] = componentCount;
+		componentIDToType[componentCount] = componentType;
 		componentArrays[componentType] = std::make_shared<ComponentArray<T>>();
 
 		componentCount++;
 	}
-	
-	//This is an implementation internal function
-	//Returns the component array of type T
+
+	//Get the ID of a component
+	template<typename T>
+	uint16_t GetComponentID()
+	{
+		const char* componentType = typeid(T).name();
+
+		return componentTypeToID[componentType];
+	}
+
+	//Implementation internal function. Returns the component array of type T
 	template<typename T>
 	std::shared_ptr<ComponentArray<T>> _GetComponentArray()
 	{
@@ -230,9 +271,8 @@ namespace ecs
 		//Get the component array of type T from the componentArrays map
 		return std::static_pointer_cast<ComponentArray<T>>(componentArrays[componentType]);
 	}
-	
-	//Add a component to entity
-	//Returns a reference to that component
+
+	//Add a component to entity. Returns a reference to that component
 	template<typename T>
 	T& AddComponent(Entity entity, T component)
 	{
@@ -243,12 +283,13 @@ namespace ecs
 			throw std::runtime_error("ECS ERROR: Entity does not exist!");
 		}
 
-		//Get the appropriate component array
-		std::shared_ptr<ComponentArray<T>> componentArray = _GetComponentArray<T>();
+		//Update the appropriate component array
+		_GetComponentArray<T>()->AddComponent(entity, component);
 
-		componentArray->AddComponent(entity, component);
+		//Update the entity signature
+		entitySignatures[entity].set(GetComponentID<T>());
 
-		//TODO update entity signatures
+		_OnEntitySignatureChanged(entity);
 	}
 
 	//Remove a component of type T from entity
@@ -262,11 +303,78 @@ namespace ecs
 			throw std::runtime_error("ECS ERROR: Entity does not exist!");
 		}
 
-		//Get the appropriate component array
-		std::shared_ptr<ComponentArray<T>> componentArray = _GetComponentArray<T>();
+		//Update the appropriate component array
+		_GetComponentArray<T>()->RemoveComponent(entity);
 
-		componentArray->RemoveComponent(entity, component);
+		//Update the entity signature
+		entitySignatures[entity].reset(GetComponentID<T>());
 
-		//TODO update entity signatures
+		_OnEntitySignatureChanged(entity);
+	}
+
+
+	//System Functions
+
+	//Register a system of type T
+	template<typename T>
+	std::shared_ptr<T> RegisterSystem()
+	{
+		const char* systemType = typeid(T).name();
+
+		//Make sure the system has not been registered
+		if (systems.count(systemType) != 0)
+		{
+			std::cout << WARNING_FORMAT << "ECS WARNING in RegisterSystem(): The system has already been registered!" << NORMAL_FORMAT << std::endl;
+			return nullptr;
+		}
+
+		//Create new system and return a pointer to it
+		std::shared_ptr<T> system = std::make_shared<T>();
+		systems[systemType] = system;
+		return system;
+	}
+
+	//Sets the signature (required components) for the system
+	template<typename T>
+	void SetSystemSignature(Signature signature)
+	{
+		const char* systemType = typeid(T).name();
+
+		//Make sure the system has been registered
+		if (systems.count(systemType) == 0)
+		{
+			std::cout << WARNING_FORMAT << "ECS WARNING in SetSignature(): The system has not been registered!" << NORMAL_FORMAT << std::endl;
+			return;
+		}
+		//Make sure the system's signature has not already been set
+		if (systemSignatures.count(systemType) != 0)
+		{
+			std::cout << WARNING_FORMAT << "ECS WARNING in SetSignature(): Don't try to set a system's signature twice!" << NORMAL_FORMAT << std::endl;
+			return;
+		}
+
+		systemSignatures[systemType] = signature;
+	}
+
+	//Implementation internal function. Called whenever an entity's signature changes
+	void _OnEntitySignatureChanged(Entity entity)
+	{
+		const Signature& signature = entitySignatures[entity];
+
+		//Loop through every system
+		for (auto const& system : systems)
+		{
+			//If the entity's signature matches the system's signature
+			if ((signature & systemSignatures[system.first]) == systemSignatures[system.first])
+			{
+				//Add the entity to the system's set
+				system.second->entities.insert(entity);
+			}
+			else
+			{
+				//Remove the entity from the system's set
+				system.second->entities.erase(entity);
+			}
+		}
 	}
 }
