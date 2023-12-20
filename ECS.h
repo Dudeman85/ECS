@@ -91,6 +91,72 @@ namespace ecs
 	std::unordered_map<const char*, Signature> systemSignatures;
 
 
+	//System Functions
+
+	//Register a system of type T
+	template<typename T>
+	std::shared_ptr<T> RegisterSystem()
+	{
+		const char* systemType = typeid(T).name();
+
+		//Make sure the system has not been registered
+		if (systems.count(systemType) != 0)
+		{
+			std::cout << WARNING_FORMAT << "ECS WARNING in RegisterSystem(): The system has already been registered!" << NORMAL_FORMAT << std::endl;
+			return nullptr;
+		}
+
+		//Create new system and return a pointer to it
+		std::shared_ptr<T> system = std::make_shared<T>();
+		systems[systemType] = system;
+		return system;
+	}
+
+	//Sets the signature (required components) for the system
+	template<typename T>
+	void SetSystemSignature(Signature signature)
+	{
+		const char* systemType = typeid(T).name();
+
+		//Make sure the system has been registered
+		if (systems.count(systemType) == 0)
+		{
+			std::cout << WARNING_FORMAT << "ECS WARNING in SetSignature(): The system has not been registered!" << NORMAL_FORMAT << std::endl;
+			return;
+		}
+		//Make sure the system's signature has not already been set
+		if (systemSignatures.count(systemType) != 0)
+		{
+			std::cout << WARNING_FORMAT << "ECS WARNING in SetSignature(): Don't try to set a system's signature twice!" << NORMAL_FORMAT << std::endl;
+			return;
+		}
+
+		systemSignatures[systemType] = signature;
+	}
+
+	//Implementation internal function. Called whenever an entity's signature changes
+	void _OnEntitySignatureChanged(Entity entity)
+	{
+		const Signature& signature = entitySignatures[entity];
+
+		//Loop through every system
+		for (auto const& system : systems)
+		{
+			//If the entity's signature matches the system's signature
+			if ((signature & systemSignatures[system.first]) == systemSignatures[system.first])
+			{
+				//Add the entity to the system's set
+				system.second->entities.insert(entity);
+			}
+			else
+			{
+				//Remove the entity from the system's set
+				system.second->entities.erase(entity);
+			}
+		}
+	}
+
+
 	//Entity Functions
 
 	//Create a new entity as a unique ID
@@ -124,11 +190,17 @@ namespace ecs
 		return entity;
 	}
 
+	//Checks if the entity exists
+	bool EntityExists(Entity entity)
+	{
+		return usedEntities.find(entity) != usedEntities.end();
+	}
+
 	//Makes the Entity available and destroys all its components
 	void DestroyEntity(Entity entity)
 	{
-		//Make sure entity is exists
-		if (usedEntities.find(entity) == usedEntities.end())
+		//Make sure the entity exists
+		if (!EntityExists(entity))
 		{
 			std::cout << WARNING_FORMAT << "ECS WARNING in DestroyEntity(): The Entity you are trying to destroy does not exist!" << NORMAL_FORMAT << std::endl;
 			return;
@@ -152,12 +224,6 @@ namespace ecs
 		usedEntities.erase(entity);
 		availableEntities.push(entity);
 		entityCount--;
-	}
-
-	//Checks if the entity exists
-	bool EntityExists(Entity entity)
-	{
-		return usedEntities.find(entity) != usedEntities.end();
 	}
 
 
@@ -246,15 +312,6 @@ namespace ecs
 		componentCount++;
 	}
 
-	//Get the ID of a component
-	template<typename T>
-	uint16_t GetComponentID()
-	{
-		const char* componentType = typeid(T).name();
-
-		return componentTypeToID[componentType];
-	}
-
 	//Implementation internal function. Returns the component array of type T
 	template<typename T>
 	std::shared_ptr<ComponentArray<T>> _GetComponentArray()
@@ -270,6 +327,36 @@ namespace ecs
 
 		//Get the component array of type T from the componentArrays map
 		return std::static_pointer_cast<ComponentArray<T>>(componentArrays[componentType]);
+	}
+
+	//Get a reference to entity's component of type T
+	template<typename T>
+	T& GetComponent(Entity entity)
+	{
+		//Make sure the entity exists
+		if (!EntityExists(entity))
+		{
+			std::cout << ERROR_FORMAT << "ECS ERROR in GetComponent(): The Entity does not exist!" << NORMAL_FORMAT << std::endl;
+			throw std::runtime_error("ECS ERROR: Entity does not exist!");
+		}
+
+		return _GetComponentArray<T>()->GetComponent(entity);
+	}
+
+	//Get the ID of a component
+	template<typename T>
+	uint16_t GetComponentID()
+	{
+		const char* componentType = typeid(T).name();
+
+		//Make sure the component has been registered
+		if (componentArrays.count(componentType) == 0)
+		{
+			std::cout << ERROR_FORMAT << "ECS ERROR in GetComponentID(): The component has not been registered!" << NORMAL_FORMAT << std::endl;
+			throw std::runtime_error("ECS ERROR: Component not registered!");
+		}
+
+		return componentTypeToID[componentType];
 	}
 
 	//Add a component to entity. Returns a reference to that component
@@ -310,71 +397,5 @@ namespace ecs
 		entitySignatures[entity].reset(GetComponentID<T>());
 
 		_OnEntitySignatureChanged(entity);
-	}
-
-
-	//System Functions
-
-	//Register a system of type T
-	template<typename T>
-	std::shared_ptr<T> RegisterSystem()
-	{
-		const char* systemType = typeid(T).name();
-
-		//Make sure the system has not been registered
-		if (systems.count(systemType) != 0)
-		{
-			std::cout << WARNING_FORMAT << "ECS WARNING in RegisterSystem(): The system has already been registered!" << NORMAL_FORMAT << std::endl;
-			return nullptr;
-		}
-
-		//Create new system and return a pointer to it
-		std::shared_ptr<T> system = std::make_shared<T>();
-		systems[systemType] = system;
-		return system;
-	}
-
-	//Sets the signature (required components) for the system
-	template<typename T>
-	void SetSystemSignature(Signature signature)
-	{
-		const char* systemType = typeid(T).name();
-
-		//Make sure the system has been registered
-		if (systems.count(systemType) == 0)
-		{
-			std::cout << WARNING_FORMAT << "ECS WARNING in SetSignature(): The system has not been registered!" << NORMAL_FORMAT << std::endl;
-			return;
-		}
-		//Make sure the system's signature has not already been set
-		if (systemSignatures.count(systemType) != 0)
-		{
-			std::cout << WARNING_FORMAT << "ECS WARNING in SetSignature(): Don't try to set a system's signature twice!" << NORMAL_FORMAT << std::endl;
-			return;
-		}
-
-		systemSignatures[systemType] = signature;
-	}
-
-	//Implementation internal function. Called whenever an entity's signature changes
-	void _OnEntitySignatureChanged(Entity entity)
-	{
-		const Signature& signature = entitySignatures[entity];
-
-		//Loop through every system
-		for (auto const& system : systems)
-		{
-			//If the entity's signature matches the system's signature
-			if ((signature & systemSignatures[system.first]) == systemSignatures[system.first])
-			{
-				//Add the entity to the system's set
-				system.second->entities.insert(entity);
-			}
-			else
-			{
-				//Remove the entity from the system's set
-				system.second->entities.erase(entity);
-			}
-		}
 	}
 }
