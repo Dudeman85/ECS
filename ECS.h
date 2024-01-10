@@ -62,7 +62,7 @@ namespace ecs
 	//Component Management Data
 
 	//Generic component array interface for component arrays
-	class IComponentArray 
+	class IComponentArray
 	{
 	public:
 		virtual void RemoveComponent(Entity entity) = 0;
@@ -111,7 +111,7 @@ namespace ecs
 		systems[systemType] = system;
 		return system;
 	}
-
+	
 	//Sets the signature (required components) for the system
 	template<typename T>
 	void SetSystemSignature(Signature signature)
@@ -133,7 +133,7 @@ namespace ecs
 
 		systemSignatures[systemType] = signature;
 	}
-
+	
 	//Implementation internal function. Called whenever an entity's signature changes
 	void _OnEntitySignatureChanged(Entity entity)
 	{
@@ -181,7 +181,7 @@ namespace ecs
 			}
 		}
 
-		//Get an available ID and mark the it as used
+		//Get an available ID and mark it as used
 		Entity entity = availableEntities.top();
 		availableEntities.pop();
 		usedEntities.insert(entity);
@@ -327,6 +327,14 @@ namespace ecs
 
 		//Get the component array of type T from the componentArrays map
 		return std::static_pointer_cast<ComponentArray<T>>(componentArrays[componentType]);
+	}
+
+	//Check if the entity has a component
+	template<typename T>
+	bool HasComponent(Entity entity)
+	{
+		//Call HasComponent of the relevant component array
+		return _GetComponentArray<T>().HasComponent(entity);
 	}
 
 	//Get a reference to entity's component of type T
