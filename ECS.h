@@ -39,9 +39,9 @@ SOFTWARE.
 namespace ecs
 {
 	//Define colors for errors and warnings
-	constexpr const char* ERROR_FORMAT = "\033[31m";
-	constexpr const char* WARNING_FORMAT = "\033[33m";
-	constexpr const char* NORMAL_FORMAT = "\033[37m";
+	constexpr const char* errorFormat = "\033[31m";
+	constexpr const char* warningFormat = "\033[33m";
+	constexpr const char* normalFormat = "\033[37m";
 
 	//Entities as IDs, 0 will never be a valid ID
 	using Entity = uint32_t;
@@ -102,7 +102,7 @@ namespace ecs
 		//Make sure the system has not been registered
 		if (systems.count(systemType) != 0)
 		{
-			std::cout << WARNING_FORMAT << "ECS WARNING in RegisterSystem(): The system has already been registered!" << NORMAL_FORMAT << std::endl;
+			std::cout << warningFormat << "ECS WARNING in RegisterSystem(): The system has already been registered!" << normalFormat << std::endl;
 			return nullptr;
 		}
 
@@ -121,13 +121,13 @@ namespace ecs
 		//Make sure the system has been registered
 		if (systems.count(systemType) == 0)
 		{
-			std::cout << WARNING_FORMAT << "ECS WARNING in SetSignature(): The system has not been registered!" << NORMAL_FORMAT << std::endl;
+			std::cout << warningFormat << "ECS WARNING in SetSignature(): The system has not been registered!" << normalFormat << std::endl;
 			return;
 		}
 		//Make sure the system's signature has not already been set
 		if (systemSignatures.count(systemType) != 0)
 		{
-			std::cout << WARNING_FORMAT << "ECS WARNING in SetSignature(): Don't try to set a system's signature twice!" << NORMAL_FORMAT << std::endl;
+			std::cout << warningFormat << "ECS WARNING in SetSignature(): Don't try to set a system's signature twice!" << normalFormat << std::endl;
 			return;
 		}
 
@@ -166,7 +166,7 @@ namespace ecs
 		//Make sure there are not too many entities
 		if (entityCount > UINT32_MAX)
 		{
-			std::cout << ERROR_FORMAT << "ECS ERROR in NewEntity(): Too many Entities!" << NORMAL_FORMAT << std::endl;
+			std::cout << errorFormat << "ECS ERROR in NewEntity(): Too many Entities!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Too many Entities!");
 		}
 
@@ -202,7 +202,7 @@ namespace ecs
 		//Make sure the entity exists
 		if (!EntityExists(entity))
 		{
-			std::cout << WARNING_FORMAT << "ECS WARNING in DestroyEntity(): The Entity you are trying to destroy does not exist!" << NORMAL_FORMAT << std::endl;
+			std::cout << warningFormat << "ECS WARNING in DestroyEntity(): The Entity you are trying to destroy does not exist!" << normalFormat << std::endl;
 			return;
 		}
 
@@ -244,7 +244,7 @@ namespace ecs
 			//Make sure the entity does not already have the component
 			if (HasComponent(entity))
 			{
-				std::cout << WARNING_FORMAT << "ECS WARNING in AddComponent(): Entity already has the component you are trying to add!" << NORMAL_FORMAT << std::endl;
+				std::cout << warningFormat << "ECS WARNING in AddComponent(): Entity already has the component you are trying to add!" << normalFormat << std::endl;
 				return;
 			}
 
@@ -257,7 +257,7 @@ namespace ecs
 			//Make sure the entity has the component
 			if (!HasComponent(entity))
 			{
-				std::cout << WARNING_FORMAT << "ECS WARNING in RemoveComponent(): Entity does not have the component you are trying to remove!" << NORMAL_FORMAT << std::endl;
+				std::cout << warningFormat << "ECS WARNING in RemoveComponent(): Entity does not have the component you are trying to remove!" << normalFormat << std::endl;
 				return;
 			}
 
@@ -270,7 +270,7 @@ namespace ecs
 			//Make sure the entity has the component
 			if (!HasComponent(entity))
 			{
-				std::cout << ERROR_FORMAT << "ECS ERROR in GetComponent(): Entity does not have the desired component!" << NORMAL_FORMAT << std::endl;
+				std::cout << errorFormat << "ECS ERROR in GetComponent(): Entity does not have the desired component!" << normalFormat << std::endl;
 				throw std::runtime_error("ECS ERROR: Entity does not have the desired component!");
 			}
 
@@ -293,14 +293,14 @@ namespace ecs
 		//Make sure the component has not been previously registered
 		if (componentArrays.count(componentType) != 0)
 		{
-			std::cout << WARNING_FORMAT << "ECS WARNING in RegisterComponent(): The component you are trying to register has alredy been registered!" << NORMAL_FORMAT << std::endl;
+			std::cout << warningFormat << "ECS WARNING in RegisterComponent(): The component you are trying to register has alredy been registered!" << normalFormat << std::endl;
 			return;
 		}
 		//Make sure there are not too many components registered
 		if (componentCount >= ECS_MAX_COMPONENTS)
 		{
-			std::cout << ERROR_FORMAT << "ECS ERROR in RegisterComponent(): Too many registered components! The current limit is "
-				<< ECS_MAX_COMPONENTS << ". Consider including \"#define ECS_MAX_COMPONENTS num\" before you include ECS.h!" << NORMAL_FORMAT << std::endl;
+			std::cout << errorFormat << "ECS ERROR in RegisterComponent(): Too many registered components! The current limit is "
+				<< ECS_MAX_COMPONENTS << ". Consider including \"#define ECS_MAX_COMPONENTS num\" before you include ECS.h!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Too many registered components!");
 		}
 
@@ -321,7 +321,7 @@ namespace ecs
 		//Make sure the component has been registered
 		if (componentArrays.count(componentType) == 0)
 		{
-			std::cout << ERROR_FORMAT << "ECS ERROR in AddComponent(): The component you are trying add has not been registered!" << NORMAL_FORMAT << std::endl;
+			std::cout << errorFormat << "ECS ERROR in AddComponent(): The component you are trying add has not been registered!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Component not registered!");
 		}
 
@@ -344,7 +344,7 @@ namespace ecs
 		//Make sure the entity exists
 		if (!EntityExists(entity))
 		{
-			std::cout << ERROR_FORMAT << "ECS ERROR in GetComponent(): The Entity does not exist!" << NORMAL_FORMAT << std::endl;
+			std::cout << errorFormat << "ECS ERROR in GetComponent(): The Entity does not exist!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Entity does not exist!");
 		}
 
@@ -360,7 +360,7 @@ namespace ecs
 		//Make sure the component has been registered
 		if (componentArrays.count(componentType) == 0)
 		{
-			std::cout << ERROR_FORMAT << "ECS ERROR in GetComponentID(): The component has not been registered!" << NORMAL_FORMAT << std::endl;
+			std::cout << errorFormat << "ECS ERROR in GetComponentID(): The component has not been registered!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Component not registered!");
 		}
 
@@ -374,7 +374,7 @@ namespace ecs
 		//Make sure the entity exists
 		if (!EntityExists(entity))
 		{
-			std::cout << ERROR_FORMAT << "ECS ERROR in AddComponent(): The entity you are trying to add the component to does not exist!" << NORMAL_FORMAT << std::endl;
+			std::cout << errorFormat << "ECS ERROR in AddComponent(): The entity you are trying to add the component to does not exist!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Entity does not exist!");
 		}
 
@@ -394,7 +394,7 @@ namespace ecs
 		//Make sure the entity exists
 		if (!EntityExists(entity))
 		{
-			std::cout << ERROR_FORMAT << "ECS ERROR in RemoveComponent(): The entity you are trying to remove the component from does not exist!" << NORMAL_FORMAT << std::endl;
+			std::cout << errorFormat << "ECS ERROR in RemoveComponent(): The entity you are trying to remove the component from does not exist!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Entity does not exist!");
 		}
 
