@@ -36,6 +36,7 @@ SOFTWARE.
 #error The maximum possible number of components is 65535
 #endif
 
+
 namespace ecs
 {
 	//Define colors for errors and warnings
@@ -99,25 +100,28 @@ namespace ecs
 	{
 		const char* systemType = typeid(T).name();
 
+#ifdef DEBUG
 		//Make sure the system has not been registered
 		if (systems.count(systemType) != 0)
 		{
 			std::cout << warningFormat << "ECS WARNING in RegisterSystem(): The system has already been registered!" << normalFormat << std::endl;
 			return nullptr;
 		}
+#endif
 
 		//Create new system and return a pointer to it
 		std::shared_ptr<T> system = std::make_shared<T>();
 		systems[systemType] = system;
 		return system;
 	}
-	
+
 	//Sets the signature (required components) for the system
 	template<typename T>
 	void SetSystemSignature(Signature signature)
 	{
 		const char* systemType = typeid(T).name();
 
+#ifdef DEBUG
 		//Make sure the system has been registered
 		if (systems.count(systemType) == 0)
 		{
@@ -130,10 +134,11 @@ namespace ecs
 			std::cout << warningFormat << "ECS WARNING in SetSignature(): Don't try to set a system's signature twice!" << normalFormat << std::endl;
 			return;
 		}
+#endif
 
 		systemSignatures[systemType] = signature;
 	}
-	
+
 	//Implementation internal function. Called whenever an entity's signature changes
 	void _OnEntitySignatureChanged(Entity entity)
 	{
@@ -163,12 +168,14 @@ namespace ecs
 	//Returns 0 on failure
 	Entity NewEntity()
 	{
+#ifdef DEBUG
 		//Make sure there are not too many entities
 		if (entityCount > UINT32_MAX)
 		{
 			std::cout << errorFormat << "ECS ERROR in NewEntity(): Too many Entities!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Too many Entities!");
 		}
+#endif
 
 		entityCount++;
 
@@ -199,12 +206,14 @@ namespace ecs
 	//Makes the Entity available and destroys all its components
 	void DestroyEntity(Entity entity)
 	{
+#ifdef DEBUG
 		//Make sure the entity exists
 		if (!EntityExists(entity))
 		{
 			std::cout << warningFormat << "ECS WARNING in DestroyEntity(): The Entity you are trying to destroy does not exist!" << normalFormat << std::endl;
 			return;
 		}
+#endif
 
 		//Delete all components
 		for (uint16_t i = 0; i < componentCount; i++)
@@ -246,12 +255,14 @@ namespace ecs
 		//Add a component to entity
 		void AddComponent(Entity entity, T component)
 		{
+#ifdef DEBUG
 			//Make sure the entity does not already have the component
 			if (HasComponent(entity))
 			{
 				std::cout << warningFormat << "ECS WARNING in AddComponent(): Entity already has the component you are trying to add!" << normalFormat << std::endl;
 				return;
 			}
+#endif
 
 			//Update entity and index maps to include new entity at the back
 			entityToIndex[entity] = componentArray.size();
@@ -263,12 +274,14 @@ namespace ecs
 		//Removes a component from entity and deletes all its data
 		void RemoveComponent(Entity entity) override
 		{
+#ifdef DEBUG
 			//Make sure the entity has the component
 			if (!HasComponent(entity))
 			{
 				std::cout << warningFormat << "ECS WARNING in RemoveComponent(): Entity does not have the component you are trying to remove!" << normalFormat << std::endl;
 				return;
 			}
+#endif
 
 			//Keep track of the deleted component's index, and the entity of the last component in the array
 			uint32_t deletedIndex = entityToIndex[entity];
@@ -291,12 +304,14 @@ namespace ecs
 		//Returns a reference to the component of entity
 		T& GetComponent(Entity entity)
 		{
+#ifdef DEBUG
 			//Make sure the entity has the component
 			if (!HasComponent(entity))
 			{
 				std::cout << errorFormat << "ECS ERROR in GetComponent(): Entity does not have the desired component!" << normalFormat << std::endl;
 				throw std::runtime_error("ECS ERROR: Entity does not have the desired component!");
 			}
+#endif
 
 			return componentArray[entityToIndex[entity]];
 		}
@@ -314,6 +329,7 @@ namespace ecs
 	{
 		const char* componentType = typeid(T).name();
 
+#ifdef DEBUG
 		//Make sure the component has not been previously registered
 		if (componentArrays.count(componentType) != 0)
 		{
@@ -327,6 +343,7 @@ namespace ecs
 				<< ECS_MAX_COMPONENTS << ". Consider including \"#define ECS_MAX_COMPONENTS num\" before you include ECS.h!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Too many registered components!");
 		}
+#endif
 
 		//Assigns an ID and makes a new component array for the registered component type
 		componentTypeToID[componentType] = componentCount;
@@ -342,12 +359,14 @@ namespace ecs
 	{
 		const char* componentType = typeid(T).name();
 
+#ifdef DEBUG
 		//Make sure the component has been registered
 		if (componentArrays.count(componentType) == 0)
 		{
 			std::cout << errorFormat << "ECS ERROR in AddComponent(): The component you are trying add has not been registered!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Component not registered!");
 		}
+#endif
 
 		//Get the component array of type T from the componentArrays map
 		return std::static_pointer_cast<ComponentArray<T>>(componentArrays[componentType]);
@@ -365,12 +384,14 @@ namespace ecs
 	template<typename T>
 	T& GetComponent(Entity entity)
 	{
+#ifdef DEBUG
 		//Make sure the entity exists
 		if (!EntityExists(entity))
 		{
 			std::cout << errorFormat << "ECS ERROR in GetComponent(): The Entity does not exist!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Entity does not exist!");
 		}
+#endif
 
 		return _GetComponentArray<T>()->GetComponent(entity);
 	}
@@ -381,12 +402,14 @@ namespace ecs
 	{
 		const char* componentType = typeid(T).name();
 
+#ifdef DEBUG
 		//Make sure the component has been registered
 		if (componentArrays.count(componentType) == 0)
 		{
 			std::cout << errorFormat << "ECS ERROR in GetComponentID(): The component has not been registered!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Component not registered!");
 		}
+#endif
 
 		return componentTypeToID[componentType];
 	}
@@ -395,12 +418,14 @@ namespace ecs
 	template<typename T>
 	T& AddComponent(Entity entity, T component)
 	{
+#ifdef DEBUG
 		//Make sure the entity exists
 		if (!EntityExists(entity))
 		{
 			std::cout << errorFormat << "ECS ERROR in AddComponent(): The entity you are trying to add the component to does not exist!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Entity does not exist!");
 		}
+#endif
 
 		//Update the appropriate component array
 		_GetComponentArray<T>()->AddComponent(entity, component);
@@ -415,12 +440,14 @@ namespace ecs
 	template<typename T>
 	void RemoveComponent(Entity entity)
 	{
+#ifdef DEBUG
 		//Make sure the entity exists
 		if (!EntityExists(entity))
 		{
 			std::cout << errorFormat << "ECS ERROR in RemoveComponent(): The entity you are trying to remove the component from does not exist!" << normalFormat << std::endl;
 			throw std::runtime_error("ECS ERROR: Entity does not exist!");
 		}
+#endif
 
 		//Update the appropriate component array
 		_GetComponentArray<T>()->RemoveComponent(entity);
