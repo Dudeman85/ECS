@@ -234,8 +234,13 @@ namespace ecs
 	class ComponentArray : public IComponentArray
 	{
 	private:
-		//A map of entity to its component
-		std::unordered_map<Entity, T> components;
+		//Packed array of all components of type T
+		std::vector<T> componentArray;
+
+		//Map from an entity id to the index of its component in the componentArray
+		std::unordered_map<Entity, uint32_t> entityToIndex;
+		//Map from a components index in the componentArray to its entity's id
+		std::unordered_map<uint32_t, Entity> indexToEntity;
 
 	public:
 		//Add a component to entity
@@ -248,7 +253,11 @@ namespace ecs
 				return;
 			}
 
-			components[entity] = component;
+			//Update entity and index maps to include new entity at the back
+			entityToIndex[entity] = componentArray.size();
+			indexToEntity[componentArray.size()] = entity;
+
+			componentArray.push_back(component);
 		}
 
 		//Removes a component from entity and deletes all its data
@@ -261,7 +270,22 @@ namespace ecs
 				return;
 			}
 
-			components.erase(entity);
+			//Keep track of the deleted component's index, and the entity of the last component in the array
+			uint32_t deletedIndex = entityToIndex[entity];
+			Entity lastEntity = indexToEntity[componentArray.size() - 1];
+
+			//Move the last element to the deleted index
+			componentArray[entityToIndex[entity]] = componentArray.back();
+
+			//Update the maps for the moved component
+			entityToIndex[lastEntity] = deletedIndex;
+			indexToEntity[deletedIndex] = lastEntity;
+
+			//Remove the deleted entity and last entity
+			entityToIndex.erase(entity);
+			indexToEntity.erase(componentArray.size() - 1);
+
+			componentArray.pop_back();
 		}
 
 		//Returns a reference to the component of entity
@@ -274,13 +298,13 @@ namespace ecs
 				throw std::runtime_error("ECS ERROR: Entity does not have the desired component!");
 			}
 
-			return components[entity];
+			return componentArray[entityToIndex[entity]];
 		}
 
 		//Returns true if the entity has this type of component
 		bool HasComponent(Entity entity)
 		{
-			return components.count(entity) > 0;
+			return entityToIndex.count(entity) > 0;
 		}
 	};
 
