@@ -24,6 +24,7 @@ SOFTWARE.
 #include <bitset>
 #include <stack>
 #include <set>
+#include <vector>
 #include <unordered_map>
 #include <typeinfo>
 #include <stdexcept>
@@ -49,23 +50,24 @@ namespace ecs
 	//Signatures as bitsets, where each component has its own bit
 	using Signature = std::bitset<ECS_MAX_COMPONENTS>;
 
-	//Entity Management Data
+	//ENTITY MANAGEMENT DATA
 
-	//A list of all currently available Entity IDs, this is dynamically increased 100 at a time
+	//All currently available Entity IDs
 	std::stack<Entity> availableEntities;
-	//A list of all the currently in use entities
+	//All the currently in use entities
 	std::set<Entity> usedEntities;
 	//A map of an Entity's ID to its signature
 	std::unordered_map<Entity, Signature> entitySignatures;
 	//How many entities are currently reserved
 	uint32_t entityCount = 0;
 
-	//Component Management Data
+	//COMPONENT MANAGEMENT DATA
 
-	//Generic component array interface for component arrays
+	//Interface for component arrays
 	class IComponentArray
 	{
 	public:
+		//I don't really like this but is seems necessary
 		virtual void RemoveComponent(Entity entity) = 0;
 	};
 	//A map of every components name to it's corresponding component array
@@ -77,7 +79,7 @@ namespace ecs
 	//The amount of components registered. Also the next available component ID
 	uint16_t componentCount = 0;
 
-	//System Management Data
+	//SYSTEM MANAGEMENT DATA
 
 	//Base class all systems inherit from
 	class System
@@ -86,15 +88,16 @@ namespace ecs
 		//Set of every entity containing the required components for the system
 		std::set<Entity> entities;
 	};
-	//Map of each system accessible by its name
+	//Map of each system accessible by its type name
 	std::unordered_map<const char*, std::shared_ptr<System>> systems;
 	//Map of each system's signature accessible by their type name
 	std::unordered_map<const char*, Signature> systemSignatures;
 
 
-	//System Functions
+	//SYSTEM FUNCTIONS
 
 	//Register a system of type T
+	//Returns a pointer to the created instance of that system
 	template<typename T>
 	std::shared_ptr<T> RegisterSystem()
 	{
@@ -162,10 +165,9 @@ namespace ecs
 	}
 
 
-	//Entity Functions
+	//ENTITY FUNCTIONS
 
-	//Create a new entity as a unique ID
-	//Returns 0 on failure
+	//Returns a new entity with no components
 	Entity NewEntity()
 	{
 #ifdef DEBUG
@@ -179,7 +181,7 @@ namespace ecs
 
 		entityCount++;
 
-		//Dynamically make entity IDs available in batches of 100
+		//Make more entity IDs available in batches of 100
 		if (availableEntities.size() == 0)
 		{
 			for (size_t i = entityCount + 99; i >= entityCount; i--)
@@ -197,13 +199,13 @@ namespace ecs
 		return entity;
 	}
 
-	//Checks if the entity exists
+	//Checks if an entity exists
 	bool EntityExists(Entity entity)
 	{
 		return usedEntities.find(entity) != usedEntities.end();
 	}
 
-	//Makes the Entity available and destroys all its components
+	//Delete an entity and all of its components
 	void DestroyEntity(Entity entity)
 	{
 #ifdef DEBUG
@@ -236,9 +238,9 @@ namespace ecs
 	}
 
 
-	//Component Functions
+	//COMPONENT FUNCTIONS
 
-	//A component array class is created for each type of component
+	//A component array class is created for each component type
 	template<typename T>
 	class ComponentArray : public IComponentArray
 	{
@@ -297,7 +299,6 @@ namespace ecs
 			//Remove the deleted entity and last entity
 			entityToIndex.erase(entity);
 			indexToEntity.erase(componentArray.size() - 1);
-
 			componentArray.pop_back();
 		}
 
@@ -452,7 +453,7 @@ namespace ecs
 		//Update the appropriate component array
 		_GetComponentArray<T>()->RemoveComponent(entity);
 
-		//Update the entity signature
+		//Update the entity's signature
 		entitySignatures[entity].reset(GetComponentID<T>());
 
 		_OnEntitySignatureChanged(entity);
