@@ -42,9 +42,9 @@ SOFTWARE.
 namespace ecs
 {
 	//Define colors for errors and warnings
-	constexpr std::string errorFormat = "\033[31m";
-	constexpr std::string warningFormat = "\033[33m";
-	constexpr std::string normalFormat = "\033[37m";
+	constexpr const char* errorFormat = "\033[31m";
+	constexpr const char* warningFormat = "\033[33m";
+	constexpr const char* normalFormat = "\033[37m";
 
 	//Entities as IDs, 0 will never be a valid ID
 	using Entity = uint32_t;
@@ -67,14 +67,14 @@ namespace ecs
 	//All components inherit from this
 	struct Component {};
 	//A map of every components name to it's corresponding component array
-	std::unordered_map<std::string, std::vector<Component>> componentArrays;
+	std::unordered_map<const char*, std::vector<Component>> componentArrays;
 	//Maps from Entities to their component indexed in component arrays
-	std::unordered_map<std::string, std::unordered_map<Entity, uint32_t>> entityToIndex;
-	std::unordered_map<std::string, std::unordered_map<uint32_t, Entity>> indexToEntity;
+	std::unordered_map<const char*, std::unordered_map<Entity, uint32_t>> entityToIndex;
+	std::unordered_map<const char*, std::unordered_map<uint32_t, Entity>> indexToEntity;
 	//A map from a components name to its ID
-	std::unordered_map<std::string, uint16_t> componentTypeToID;
+	std::unordered_map<const char*, uint16_t> componentTypeToID;
 	//A map from a components ID to its name
-	std::unordered_map<uint16_t, std::string> componentIDToType;
+	std::unordered_map<uint16_t, const char*> componentIDToType;
 	//The amount of components registered. Also the next available component ID
 	uint16_t componentCount = 0;
 
@@ -88,9 +88,9 @@ namespace ecs
 		std::set<Entity> entities;
 	};
 	//Map of each system accessible by its type name
-	std::unordered_map<std::string, std::shared_ptr<System>> systems;
+	std::unordered_map<const char*, std::shared_ptr<System>> systems;
 	//Map of each system's signature accessible by their type name
-	std::unordered_map<std::string, Signature> systemSignatures;
+	std::unordered_map<const char*, Signature> systemSignatures;
 
 
 	//SYSTEM FUNCTIONS
@@ -100,7 +100,7 @@ namespace ecs
 	template<typename T>
 	std::shared_ptr<T> RegisterSystem()
 	{
-		std::string systemType = typeid(T).name();
+		const char* systemType = typeid(T).name();
 
 #ifdef DEBUG
 		//Make sure the system has not been registered
@@ -121,7 +121,7 @@ namespace ecs
 	template<typename T>
 	void SetSystemSignature(Signature signature)
 	{
-		std::string systemType = typeid(T).name();
+		const char* systemType = typeid(T).name();
 
 #ifdef DEBUG
 		//Make sure the system has been registered
@@ -171,7 +171,7 @@ namespace ecs
 	template<typename T>
 	void RegisterComponent()
 	{
-		std::string componentType = typeid(T).name();
+		const char* componentType = typeid(T).name();
 
 #ifdef DEBUG
 		//Make sure the component has not been previously registered
@@ -201,7 +201,7 @@ namespace ecs
 	template<typename T>
 	bool HasComponent(Entity entity)
 	{
-		std::string componentType = typeid(T).name();
+		const char* componentType = typeid(T).name();
 
 		//Call HasComponent of the relevant component array
 		return entityToIndex[componentType].count(entity);
@@ -211,7 +211,7 @@ namespace ecs
 	template<typename T>
 	T& GetComponent(Entity entity)
 	{
-		std::string componentType = typeid(T).name();
+		const char* componentType = typeid(T).name();
 
 #ifdef DEBUG
 		//Make sure the entity exists
@@ -238,7 +238,7 @@ namespace ecs
 	template<typename T>
 	uint16_t GetComponentID()
 	{
-		std::string componentType = typeid(T).name();
+		const char* componentType = typeid(T).name();
 
 #ifdef DEBUG
 		//Make sure the component has been registered
@@ -256,7 +256,7 @@ namespace ecs
 	template<typename T>
 	T& AddComponent(Entity entity, T component)
 	{
-		std::string componentType = typeid(T).name();
+		const char* componentType = typeid(T).name();
 
 #ifdef DEBUG
 		//Make sure the entity exists
@@ -286,7 +286,7 @@ namespace ecs
 	}
 
 	//Implementation internal function. Removes a component from an entity.
-	void _RemoveComponentByName(Entity entity, std::string componentType)
+	void _RemoveComponentByName(Entity entity, const char* componentType)
 	{
 #ifdef DEBUG
 		//Make sure the entity exists
@@ -329,7 +329,7 @@ namespace ecs
 	template<typename T>
 	inline void RemoveComponent(Entity entity)
 	{
-		std::string componentType = typeid(T).name();
+		const char* componentType = typeid(T).name();
 
 		_RemoveComponentByName(entity, componentType);
 	}
