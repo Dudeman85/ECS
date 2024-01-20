@@ -31,6 +31,7 @@ SOFTWARE.
 #include <typeinfo>
 #include <stdexcept>
 #include <iostream>
+#include <memory>
 
 //Allow max components to be determined outside this file
 #ifndef ECS_MAX_COMPONENTS
@@ -93,6 +94,10 @@ namespace ecs
 	//Map of each system's signature accessible by their type name
 	std::unordered_map<const char*, Signature> systemSignatures;
 
+
+	//FORWARD DECLARES
+	template<typename T>
+	inline uint16_t GetComponentID();
 
 	//INTERNAL FUNCTIONS
 
@@ -388,7 +393,7 @@ namespace ecs
 		}
 #endif
 
-		return std::reinterpret_pointer_cast<T>(systems[systemType]);
+		return std::static_pointer_cast<T>(systems[systemType]);
 	}
 
 	//Register a system to require the specified components

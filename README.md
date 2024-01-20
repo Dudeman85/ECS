@@ -2,7 +2,7 @@
 
 *This is a very basic header-only implementation of Entity Component System, it is not meant to be used to make actual games.*
 
-**ECS** or **Entity Component System** is an approach to designing game objects by having an **entity** represent the object, **components** which contain all the data of the object, and **systems** which operate on the data in components.
+**ECS** or **Entity Component System** is an approach to designing game objects by having an **entity** represent the object, **components** which contain all the data of the object, and **systems** which are collections of functions and operate on the data in components.
 
 This is generally much better than the traditional inheritance approach because:
 - It is much more flexible in the ways you can make game objects.
@@ -12,11 +12,12 @@ This is generally much better than the traditional inheritance approach because:
 ## Basic Consepts
 The ECS architectures consists of entities, components, and systems:
 - **Entities can be though of as base game objects.** They don't contain any data and are simply numeric IDs.
-- **Components store data attached to entities.** They are aggregate structs, or other plain old data.
+- **Components store data attached to entities.** They are aggregate structs and have no functions.
 - **Systems operate upon the data in components.** Each system has required components it needs to operate; if an entity has every required component it will be operated upon by the system.
 
 ## Usage
-This is a header-only implementation, therefore simply include "ECS.h" in any files that use ECS. All types and functions are in the ecs namespace.
+This is a header-only implementation, therefore simply include "ECS.h" in any files that use ECS. All types and functions are in the ecs namespace.<br>
+**It also requires C++17 or higher!**
 
 ### Functions
 Function | Example | Description
@@ -104,8 +105,12 @@ int main()
 
 Look in main.cpp for another example program.
 
+## Design Goals
+1. Maximum performance at run time.
+2. Simple header only implementation.
+3. Easy and simple to work with for the end user.
+
 ## TODO:
-- Reimplement component arrays properly
-- Test vectors vs carrays for performance
-- Possibly dynamically resize component arrays?
+- Add macros to register things before main
 - Document everything here
+- Update docs
