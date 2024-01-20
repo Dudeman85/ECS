@@ -8,12 +8,12 @@
 #define ITERATIONS 10000
 
 //Foo struct, this will become a component once it is registered as one
-struct Foo
+struct Foo : ecs::Component
 {
 	float a;
 };
 //Bar struct, this will become a component once it is registered as one
-struct Bar
+struct Bar : ecs::Component
 {
 	int a;
 	float b;
