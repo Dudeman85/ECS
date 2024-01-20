@@ -4,8 +4,12 @@
 #define ECS_MAX_COMPONENTS 100
 #include "ECS.h"
 
-#define ENTITIES 10000
+#ifdef _DEBUG
+#define ITERATIONS 1000
+#else
 #define ITERATIONS 10000
+#endif
+#define ENTITIES 10000
 
 //Foo struct, this will become a component once it is registered as one
 struct Foo : ecs::Component
@@ -53,11 +57,7 @@ int main()
 	ecs::RegisterComponent<Bar>();
 
 	//Register the TestSystem system and set its signature
-	std::shared_ptr<TestSystem> testSystem = ecs::RegisterSystem<TestSystem>();
-	ecs::Signature testSignature;
-	testSignature.set(ecs::GetComponentID<Foo>());
-	testSignature.set(ecs::GetComponentID<Bar>());
-	ecs::SetSystemSignature<TestSystem>(testSignature);
+	std::shared_ptr<TestSystem> ts = ecs::RegisterSystem<TestSystem, Foo, Bar>();
 
 	//Make a bunch of entities
 	for (int i = 0; i < ENTITIES; i++)
@@ -86,7 +86,7 @@ int main()
 	//Call the TestSystem System's Update function
 	for (int i = 0; i < ITERATIONS; i++)
 	{
-		testSystem->Update();
+		ts->Update();
 	}
 
 	//End tests
