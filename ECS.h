@@ -40,7 +40,16 @@ SOFTWARE.
 #error The maximum possible number of components is 65535
 #endif
 
-#define ECS_RESIGTER_SYSTEM
+//Macto to register a component outside main
+#define ECS_REGISTER_COMPONENT(COMPONENT) \
+struct COMPONENT; \
+namespace ecs { const bool COMPONENT##Registered = ( ecs::RegisterComponent<COMPONENT>(), true ); }
+
+//Macro to register a system and its components outside main
+#define ECS_RESIGTER_SYSTEM(SYSTEM, ...) \
+class SYSTEM; \
+namespace ecs { const bool SYSTEM##Registered = ( ecs::RegisterSystem<SYSTEM, __VA_ARGS__>(), true ); }
+
 
 namespace ecs
 {
@@ -161,7 +170,7 @@ namespace ecs
 		_OnEntitySignatureChanged(entity);
 	}
 
-	
+
 	//PUBLIC FUNCTIONS
 
 	//Checks if an entity exists
@@ -289,7 +298,7 @@ namespace ecs
 
 		return component;
 	}
-	
+
 	//Remove a component of type T from entity
 	template<typename T>
 	inline void RemoveComponent(Entity entity)
@@ -313,7 +322,7 @@ namespace ecs
 
 		_RemoveComponentByName(entity, componentType);
 	}
-		
+
 	//Returns a new entity with no components
 	Entity NewEntity()
 	{
@@ -377,7 +386,7 @@ namespace ecs
 		availableEntities.push(entity);
 		entityCount--;
 	}
-	
+
 	//Returns a reference to the desired system
 	template<typename T>
 	inline std::shared_ptr<T> GetSystem()

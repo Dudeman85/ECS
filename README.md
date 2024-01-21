@@ -111,6 +111,4 @@ Look in main.cpp for another example program.
 3. Easy and simple to work with for the end user.
 
 ## TODO:
-- Add macros to register things before main
-- Document everything here
 - Update docs

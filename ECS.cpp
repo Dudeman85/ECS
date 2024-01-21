@@ -11,6 +11,7 @@
 #endif
 #define ENTITIES 10000
 
+
 //Foo struct, this will become a component once it is registered as one
 struct Foo : ecs::Component
 {
@@ -52,9 +53,9 @@ int main()
 	std::cout << "Start Test 1:\n";
 	auto start = std::chrono::high_resolution_clock::now();
 
-	//Register Foo and Bar components
-	ecs::RegisterComponent<Foo>();
+	//Register the Foo and Bar components
 	ecs::RegisterComponent<Bar>();
+	ecs::RegisterComponent<Foo>();
 
 	//Register the TestSystem system and set its signature
 	std::shared_ptr<TestSystem> ts = ecs::RegisterSystem<TestSystem, Foo, Bar>();
