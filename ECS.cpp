@@ -12,11 +12,14 @@
 #define ENTITIES 10000
 
 
+ECS_REGISTER_COMPONENT(Foo)
 //Foo struct, this will become a component once it is registered as one
 struct Foo : ecs::Component
 {
 	float a;
 };
+
+ECS_REGISTER_COMPONENT(Bar)
 //Bar struct, this will become a component once it is registered as one
 struct Bar : ecs::Component
 {
@@ -24,6 +27,7 @@ struct Bar : ecs::Component
 	float b;
 };
 
+ECS_REGISTER_SYSTEM(TestSystem, Foo, Bar)
 //TestSystem system requires Foo and Bar
 class TestSystem : public ecs::System
 {
@@ -54,11 +58,12 @@ int main()
 	auto start = std::chrono::high_resolution_clock::now();
 
 	//Register the Foo and Bar components
-	ecs::RegisterComponent<Bar>();
-	ecs::RegisterComponent<Foo>();
+	//ecs::RegisterComponent<Bar>();
+	//ecs::RegisterComponent<Foo>();
 
 	//Register the TestSystem system and set its signature
-	std::shared_ptr<TestSystem> ts = ecs::RegisterSystem<TestSystem, Foo, Bar>();
+	//std::shared_ptr<TestSystem> ts = ecs::RegisterSystem<TestSystem, Foo, Bar>();
+	std::shared_ptr<TestSystem> ts = ecs::GetSystem<TestSystem>();
 
 	//Make a bunch of entities
 	for (int i = 0; i < ENTITIES; i++)

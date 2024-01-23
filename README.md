@@ -112,3 +112,4 @@ Look in main.cpp for another example program.
 
 ## TODO:
 - Update docs
+- Fix macro registration and add an init function
