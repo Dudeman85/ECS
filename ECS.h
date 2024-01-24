@@ -40,15 +40,6 @@ SOFTWARE.
 #error The maximum possible number of components is 65535
 #endif
 
-//Macto to register a component outside main
-#define ECS_REGISTER_COMPONENT(COMPONENT) \
-struct COMPONENT; \
-namespace ecs { const bool COMPONENT##Registered = ( ecs::RegisterComponent<COMPONENT>(true), true ); }
-
-//Macro to register a system and its components outside main
-#define ECS_REGISTER_SYSTEM(SYSTEM, ...) \
-class SYSTEM; \
-namespace ecs { const bool SYSTEM##Registered = ( ecs::RegisterSystem<SYSTEM, __VA_ARGS__>(true), true ); }
 
 namespace ecs
 {
@@ -184,19 +175,17 @@ namespace ecs
 
 	//Register a new component of type T
 	template<typename T>
-	void RegisterComponent(bool suppressWarnings = false)
+	void RegisterComponent()
 	{
 		const char* componentType = typeid(T).name();
 
+#ifdef _DEBUG
 		//Make sure the component has not been previously registered
 		if (componentArrays.count(componentType) != 0)
 		{
-			if(!suppressWarnings)
-				std::cout << warningFormat << "ECS WARNING in RegisterComponent(): The component you are trying to register has alredy been registered!" << normalFormat << std::endl;
+			std::cout << warningFormat << "ECS WARNING in RegisterComponent(): The component you are trying to register has alredy been registered!" << normalFormat << std::endl;
 			return;
 		}
-
-#ifdef _DEBUG
 		//Make sure there are not too many components registered
 		if (componentCount >= ECS_MAX_COMPONENTS)
 		{
@@ -412,20 +401,21 @@ namespace ecs
 
 	//Register a system to require the specified components
 	template<typename Sys, typename... Comps>
-	std::shared_ptr<Sys> RegisterSystem(bool autoRegister = false)
+	std::shared_ptr<Sys> RegisterSystem()
 	{
 		const char* systemType = typeid(Sys).name();
 
+#ifdef _DEBUG
 		//Make sure the system has not been registered
 		if (systems.count(systemType) != 0)
 		{
-			if(!autoRegister)
-				std::cout << warningFormat << "ECS WARNING in RegisterSystem(): The system has already been registered!" << normalFormat << std::endl;
+			std::cout << warningFormat << "ECS WARNING in RegisterSystem(): The system has already been registered!" << normalFormat << std::endl;
 			return GetSystem<Sys>();
 		}
+#endif
 
 		//Make the signature and system
-		systemSignatures[systemType] = _MakeSignature<Comps...>(autoRegister);
+		systemSignatures[systemType] = _MakeSignature<Comps...>();
 		std::shared_ptr<Sys> system = std::make_shared<Sys>();
 		systems[systemType] = system;
 		return system;
